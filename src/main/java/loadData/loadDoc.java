@@ -19,6 +19,7 @@ import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 import static jdk.nashorn.internal.objects.ArrayBufferView.buffer;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.math3.analysis.solvers.BracketedRealFieldUnivariateSolver;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -43,19 +44,19 @@ import twitter4j.TwitterException;
  * @author marti
  */
 public class loadDoc {
-    
-    public static void main(String [ ] args) throws FileNotFoundException, IOException
-        {
-   
-
+	
+    public static void main(String [ ] args) throws FileNotFoundException, IOException {
+    	System.out.println("Starting");
         Directory dir; 
-        dir = new SimpleFSDirectory(new File("D:/lucene_index"));
+        dir = new SimpleFSDirectory(new File(".\\data\\lucene_index_r"));
         Analyzer analyzer = new StandardAnalyzer(LUCENE_41);
+        System.out.println("Setting writer configurations");
         IndexWriterConfig cfg= new IndexWriterConfig(LUCENE_41,analyzer);
+        System.out.println("Creating writer object");
         IndexWriter writer = new IndexWriter(dir, cfg); 
-
+        System.out.println("Created index");
         
-        File file = new File("C:\\Users\\marti\\Desktop\\Social\\stream");
+        File file = new File(".\\data\\test-dataset-sbn2017_r\\stream");
         String[] directories = file.list(new FilenameFilter() {
         public boolean accept(File current, String name) {
            return new File(current, name).isDirectory();
@@ -65,20 +66,18 @@ public class loadDoc {
         
         
     for (String directory : directories) {
-
-     Iterator it = FileUtils.iterateFiles(new File("C:\\Users\\marti\\Desktop\\Social\\stream\\" + directory), null, false);
-     while(it.hasNext()){
-           
-        String file_path = "C:\\Users\\marti\\Desktop\\Social\\stream\\" + directory + "\\" + ((File) it.next()).getName(); 
-
+     System.out.println("Directory: " + directory);
+     Iterator<File> it = FileUtils.iterateFiles(new File(".\\data\\test-dataset-sbn2017_r\\stream\\" + directory), null, false);
+     while(it.hasNext()){           
+        String file_path = ".\\data\\test-dataset-sbn2017_r\\stream\\" + directory + "\\" + ((File) it.next()).getName(); 
+        System.out.println("\tprocessing file "+ file_path);
         FileInputStream fs = new FileInputStream(file_path); 
         InputStream gzStream = new GZIPInputStream(fs); ///  FileInputStream fs = new FileInputStream(file_path);
         InputStreamReader isr = new InputStreamReader(gzStream); 
-        BufferedReader br = new BufferedReader( isr ); 
+        BufferedReader br = new BufferedReader(isr); 
 
         // read file lines 
         String line;
-
         line = br.readLine(); 
         
         while(line!=null) {
@@ -91,23 +90,15 @@ public class loadDoc {
                 Logger.getLogger(loadDoc.class.getName()).log(Level.SEVERE, null, ex);
             }
 
-        
         index_creator.addDoc(writer, sw.getStatus().getUser().getScreenName().toLowerCase(), sw.getStatus().getUser().getId(), sw.getStatus().getText().toLowerCase(), sw.getTime());     
-                  
-        
         line = br.readLine();
-
         }
+        br.close();
      
-     }
-     
-    }
-        
-        writer.commit();
-        writer.close(); 
-        
-        
-     }
+	}
+  }
+  writer.commit();
+  writer.close(); 
+  }     
 
- 
 }

@@ -1,0 +1,4 @@
+/target/
+/data/test-dataset*
+/data/lucene_*
+

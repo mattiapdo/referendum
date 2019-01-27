@@ -43,18 +43,31 @@ import org.apache.lucene.util.BytesRef;
  * @author marti
  */
 public class BuldSax {
+	
+	public String TimeSeriesToSAX(double[] timeserie, int alphabetSize, double nThreshold) throws SAXException { // 2, 0.01
+	    	
+	        // instantiate classes 
+	        NormalAlphabet na = new NormalAlphabet();
+	        SAXProcessor sp = new SAXProcessor();     
+	
+	        // perform the discretization with sp.ts2saxByChunking(timeseries , paaSize, cuts, nThreshold)
+	        SAXRecords res = sp.ts2saxByChunking(timeserie, timeserie.length, na.getCuts(alphabetSize), nThreshold);
+	        // get sax string
+	        String sax = res.getSAXString("");
+	        return (sax); 
+	    }
     
     public static void main(String [] args) throws IOException, SAXException  {
-    // TODO Auto-generated method stub
-    String iNDEX_DIR2 = "D:/lucene_index"; 
+    
+    String iNDEX_DIR2 = ".\\data\\lucene_index"; 
     System.out.println("INDEX_DIR:" + iNDEX_DIR2);
-    SimpleFSDirectory dir = new SimpleFSDirectory(new File("D:/lucene_index"));
+    SimpleFSDirectory dir = new SimpleFSDirectory(new File(iNDEX_DIR2));
     IndexReader reader  = DirectoryReader.open(dir);
                        
     int num_doc = reader.numDocs();
     System.out.println("number of docs: " + String.valueOf(num_doc));
     
-    
+    // get fields from reader - UserSN, userid, text, time
     Fields fields = MultiFields.getFields(reader); 
     Terms terms = fields.terms("text"); 
     TermsEnum termsIterator = terms.iterator(null);
@@ -62,48 +75,30 @@ public class BuldSax {
     BytesRef BytesRef = null;  
     // For every term in the "Text" Field:
     while ((BytesRef = termsIterator.next()) != null) {
-    String t = new String(BytesRef.bytes, BytesRef.offset,
-    BytesRef.length);
+    	
+    String t = new String(BytesRef.bytes, BytesRef.offset, BytesRef.length);
      if ((t.length() > 2) && (t.length() < 15) && StringUtils.isAlpha(t) && (termsIterator.docFreq() > 15)) { 
         System.out.println(t); 
      }
     }
-    
 
-        /*
-        Map<String, Integer> frequencies = new HashMap<>();
-        Set<String> terms_set = new HashSet<>();
-        BytesRef text = null;
-        while ((text = termsIterator.next()) != null) {
-        String term = text.utf8ToString();
-        int freq = (int) termsIterator.totalTermFreq();
-        System.out.println(freq); 
-        frequencies.put(term, freq);
-        terms_set.add(term);
-        }
-         */ 
-    
-    
-      
-    int alphabetSize = 2;
-    double nThreshold = 0.01; 
-    
-    // instantiate classes 
-    
-    NormalAlphabet na = new NormalAlphabet();
-    SAXProcessor sp = new SAXProcessor();
-    
-    double[] ts = {10, 20, 20, 50, 80, 10, 50, 80, 10, 5};             
-
-    
-    // perform the discretization
-    SAXRecords res = sp.ts2saxByChunking(ts, ts.length,
-    na.getCuts(alphabetSize), nThreshold); 
-    
-    String sax = res.getSAXString("");
-    System.out.println(sax); 
-    System.out.println(sax.matches("a+b+a*b*a*")); 
-              
+	/*
+	Map<String, Integer> frequencies = new HashMap<>();
+	Set<String> terms_set = new HashSet<>();
+	BytesRef text = null;
+	while ((text = termsIterator.next()) != null) {
+	String term = text.utf8ToString();
+	int freq = (int) termsIterator.totalTermFreq();
+	System.out.println(freq); 
+	frequencies.put(term, freq);
+	terms_set.add(term);
+	}
+	*/ 
+   
+    // example of time series
+    double[] ts = {10, 20, 20, 50, 80, 10, 50, 80, 10, 5};        
+    String sax = TimeSeriesToSAX(ts, 2, 0.01);
+                
     }
     
     
