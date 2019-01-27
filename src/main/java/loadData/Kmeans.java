@@ -16,17 +16,31 @@ public class Kmeans
         
 {
 
-    private final int MaxIter;
-    private final char[][] sax;
-    private final int k;
-    private final int original_size;
-    private final int alphabet_size;
+    private int MaxIter;
+    private double convergence_threshold;
+    private int k;
+    private char[][] centroids;
+    
+    private int original_size;
+    private int alphabet_size;
+    
+    private char[][] sax;
+	private int m;
+	private int n;
+	private char[] sax_alphabet;
+	
+	private double[][] lookup_table;
+	
     
     // constructor
-    public Kmeans(char[][] sax, int k, int alphabet_size, int original_size, int MaxIter) {
+    Kmeans(char[][] sax, int k, int alphabet_size, int original_size, int MaxIter, double convergence_threshold) {
         
         // maximum number of iterations 
         this.MaxIter = MaxIter; 
+        
+        // convergence threshold to be tuned 
+        //this.convergence_threshold = convergence_threshold;
+        this.convergence_threshold = 0.1;  
 
         // sax strings array 
         this.sax = sax; 
@@ -42,29 +56,34 @@ public class Kmeans
 
         // array of distinct sax symbols 
         char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
-        char[] sax_alphabet = Arrays.copyOfRange(alphabet, 0, alphabet_size);
+        this.sax_alphabet = Arrays.copyOfRange(alphabet, 0, alphabet_size);
         
         //number of strings
-        int n = sax.length; 
+        this.n = sax.length; 
         
         //length of each sax string 
-        int m = sax[0].length; 
+        this.m = sax[0].length; 
         
-        //Create table for distance (MINDIST) computation 
+    }
+    
+    
+    public void setLookUpTable() {
+    	//Create table for distance (MINDIST) computation 
         
         //sax breakpoints 
         Map<Integer, Double[]> breakpoints = new HashMap<Integer, Double[]>();
-        breakpoints.put(3, new Double[] {-0.43,0.43}); 
-        breakpoints.put(4, new Double[] {-0.67,0.0, 0.067}); 
-        breakpoints.put(5,new Double[] {-0.84,-0.25, 0.25, 0.84}); 
-        breakpoints.put(6,new Double[] {-0.97,-0.43,0.0, 0.43, 0.97}); 
-        breakpoints.put(7,new Double[] {-1.07, -0.57, -0.18, 0.18, 0.57, 1.07}); 
-        breakpoints.put(8,new Double[] {-1.15, -0.67, -0.32, 0.0, 0.32, 0.67, 1.15}); 
-        breakpoints.put(9,new Double[] {-1.22, -0.76, -0.43, -0.14, 0.14, 0.43, 0.76, 1.22}); 
-        breakpoints.put(10,new Double[] {-1.28, -0.84, -0.52, -0.25, 0.0, 0.25, 0.52, 0.84, 1.28});
+        
+	        breakpoints.put(3, new Double[] {-0.43,0.43}); 
+	        breakpoints.put(4, new Double[] {-0.67,0.0, 0.067}); 
+	        breakpoints.put(5,new Double[] {-0.84,-0.25, 0.25, 0.84}); 
+	        breakpoints.put(6,new Double[] {-0.97,-0.43,0.0, 0.43, 0.97}); 
+	        breakpoints.put(7,new Double[] {-1.07, -0.57, -0.18, 0.18, 0.57, 1.07}); 
+	        breakpoints.put(8,new Double[] {-1.15, -0.67, -0.32, 0.0, 0.32, 0.67, 1.15}); 
+	        breakpoints.put(9,new Double[] {-1.22, -0.76, -0.43, -0.14, 0.14, 0.43, 0.76, 1.22}); 
+	        breakpoints.put(10,new Double[] {-1.28, -0.84, -0.52, -0.25, 0.0, 0.25, 0.52, 0.84, 1.28});
         
         //lookup table for distance
-        double[][] lookup_table = new double[alphabet_size][alphabet_size]; 
+        lookup_table = new double[alphabet_size][alphabet_size]; 
 
         Double[] breakpoints_arr = breakpoints.get(alphabet_size); 
 
@@ -77,23 +96,19 @@ public class Kmeans
                 }
             }
         }
-        
-        
     }
     
     
-    public static char[][] initialize_centroid(int m, int k, char[] sax_alphabet) {
+    public char[][] initialize_centroids() {
         /*
         * randomly initilize centroids (i.e. medoids) 
-        * m : sax length 
-        * k : number of clusters 
-        * sax_alphabet : array of distinct sax symbols 
+        *
         * return a bidimensional array of random centroids 
         */ 
         Random random = new Random();
         
          //initilize centroids array (each row represent the centroid of a cluster) 
-        char[][] centroids = new char[k][m]; 
+        this.centroids = new char[k][m]; 
         
         // for each cluster 
         for(int c = 0; c< k; c++) {
@@ -113,20 +128,16 @@ public class Kmeans
     }
     
     
-    public static double dist(double[][] lookup_table, char[] sax_alphabet,  int original_len, int m, int alphabet_size, char[] sax, char[] centroid) {
+    public double dist(char[] sax, char[] centroid) {
 	      /*
 	        * compute MinDist distance between two sax strings 
-	        * lookup_table : table for character distance lookup 
-	        * sax_alphabet : array of distinct sax symbols 
-	        * original_len : length of the original time series  
-	        * m : sax length 
-	        * alphabet_size : size of the alphabet 
+	        * 
 	        * sax: single sax string 
 	        * centroid : single centroid string 
 	        *
 	        * Return a double giving the distance between @sax and @centroid 
 	        */ 
-	     double norm_const = Math.sqrt(original_len / m);
+	     double norm_const = Math.sqrt(original_size / m);
 	    
 	     double total_sum = 0; 
 	     
@@ -149,21 +160,12 @@ public class Kmeans
 	 }
     
     
-    public static int[] update_partition(double[][] lookup_table, char[] sax_alphabet,  int original_len, int m, int alphabet_size, char sax[][], char[][] centroids, int[] partition, int n, int k) {
+    public int[] update_partition(int[] partition) {
 	    /*
 	        * update clustering by assigning each sax to cluster with closest centtoid  
-	        * lookup_table : table for character distance lookup 
-	        * sax_alphabet : array of distinct sax symbols 
-	        * original_len : length of the original time series  
-	        * m : sax length 
-	        * alphabet_size : size of the alphabet 
-	        * sax: bidemensional array of (all) sax strings 
-	        * centroids : bidimensional array with all centroids 
 	        * partition : array giving the cluster memebership for each array 
-	        * n : number of sax strings 
-	        * k : number of clusters 
 	        *
-	        * Return the array @partition showing for each sax string the cluster it belongs to 
+	        * Return the array partition showing for each sax string the cluster it belongs to 
 	    */ 
 	          
 	    //for each point 
@@ -177,10 +179,10 @@ public class Kmeans
 	            
 	            //compute distance
 	           double d; 
-	           d = dist(lookup_table, sax_alphabet,  original_len,  m, alphabet_size, sax[i], centroids[c]);
+	           d = dist(sax[i], centroids[c]);
 	            
 	                    if(d<min) {
-	                        // update current minimum and @partition array
+	                        // update current minimum and partition array
 	                        min = d; 
 	                        partition[i] = c; 
 	            }
@@ -190,16 +192,10 @@ public class Kmeans
 	}
     
 
-    public static char[][] update_centroid(char[][] sax, char[][] centroids, int[] partition, int m, int n, int k, char[] sax_alphabet) {
+    public char[][] update_centroid(int[] partition) {
      /*
         * update cluster centroids by computing medoids 
-        * sax: bidemensional array of (all) sax strings 
-        * centroids : bidimensional array with all centroids 
         * partition : array giving the cluster memebership for each array
-        * m : sax length 
-        * n : number of sax strings 
-        * k : number of clusters 
-        * sax_alphabet : array of distinct sax symbols 
         * 
         * Return updated cluster centroids 
     */ 
@@ -239,33 +235,23 @@ public class Kmeans
    }
     
     
-    public static boolean check_convergence(double[][] lookup_table, char[] sax_alphabet,  int original_len, int m, int alphabet_size, int k, char[][] old_centroids, char[][] centroids ) {
+    public boolean check_convergence(char[][] old_centroids, char[][] centroids ) {
        /*
        * check convergence : if all the cluster centroids are displaced by less than @convergence_threshold the method returns true 
-       * lookup_table :  table for character distance lookup 
-       * sax_alphabet : array of distinct sax symbols 
-       * original_len : length of the original time series  
-       * m : sax length 
-       * alphabet_size : size of the alphabet 
-       * k : number of clusters 
        * old_centroids : previous centroids 
        * centrodis : current centroids 
-        
+       *
        * Return true if algorithm converged, false otherwise 
-        
-        
         */ 
 
        boolean converged = true; 
-       
-       double convergence_threshold = 0.1;  // to be tuned 
        
        // for each cluster 
        for(int c = 0; c < k ; c++) {
            
            //compute distance
            double d; 
-           d = dist(lookup_table, sax_alphabet,  original_len,  m, alphabet_size, old_centroids[c], centroids[c]);
+           d = dist(old_centroids[c], centroids[c]);
          
            // check convergence for current cluster centroid
            if(d > convergence_threshold) {
@@ -277,19 +263,9 @@ public class Kmeans
    }
     
         
-    public static int[] perform_clustering(int MaxIter, double[][] lookup_table, int original_len, int alphabet_size,  char[][] sax, int k, int n, int m, char[] sax_alphabet) {
+    public int[] perform_clustering() {
         
         /*  Perform k-means clustering 
-         * MaxIter : maximum number of iteration 
-         * lookup_table :  table for character distance lookup
-         * original_len : length of the original time series  
-         * alphabet_size : size of the alphabet
-         * sax : array containing sax strings 
-         *  k : number of clusters 
-         *  n : number of sax strings 
-         *  m : string length 
-         *  sax : 2D array 
-         *  sax_alphabet : alphabet of sax strings 
          * 
          * Return the array indicating the partition for each sax string 
          */
@@ -301,22 +277,22 @@ public class Kmeans
         char[][] old_centroids; 
         
         // randomly initialize centroids 
-        char[][] centroids = initialize_centroid( m,  k, sax_alphabet); 
+        centroids = initialize_centroids(); 
         
         // for each iteration 
         for(int iter = 0; iter< MaxIter; iter++) {
 
             // update clusters assigning each point to the cluster having the closest centroid 
-            partition = update_partition( lookup_table, sax_alphabet, original_len, m, alphabet_size,  sax, centroids,  partition,  n,  k); 
+            partition = update_partition(partition); 
 
             // centroids before updating for checking convergence 
             old_centroids = centroids; 
            
             // update cluster centroids 
-            centroids =  update_centroid(sax, centroids, partition, m, n, k, sax_alphabet); 
+            centroids =  update_centroid(partition); 
 
             //check convergence 
-            boolean converged = check_convergence(lookup_table, sax_alphabet,  original_len, m,  alphabet_size, k, old_centroids,  centroids);
+            boolean converged = check_convergence(old_centroids,  centroids);
             if(converged) {
                 break; 
             }

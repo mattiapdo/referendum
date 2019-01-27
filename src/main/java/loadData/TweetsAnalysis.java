@@ -72,13 +72,19 @@ public class TweetsAnalysis {
         Y.getTermini().sortByFreq();
         System.out.println("Setting hashmap with top 1000 results");
         Y.getTermini().setTop(1000);
-        System.out.println("Top 1000 terms by frequency:\n" + Y.getTermini().getImportantTerms());
+        System.out.println("Top 1000 terms by frequency:\n" + Y.getTermini().getImportantTermsKeySet());
         System.out.println("Setting top terms time series");
         Y.getTermini().setTopTermsTimeSeries(43200L);
         System.out.println("Setting top terms SAX strings");
         Y.getTermini().setTopTermsSAXStrings(2, 0.01);
         System.out.println("Saving SAX string into file");
-        Y.getTermini().getSAXStringIntoFile("./data/SAXStrings.csv");
+        Y.getTermini().getSAXStringsIntoFile("./data/SAXStrings.csv");
+        
+        // K-means
+        System.out.println("Performing clustering on ");
+        int original_size = Y.getTermini().getImportantTerms().entrySet().iterator().next().getValue().getTimeSeriesLength(); // non troppo pulito qui perchè si assume che l'iteratore abbia un next()
+        Kmeans kmeans = new Kmeans(Y.getTermini().getSaxMostImp(), 3, 2, original_size, 1000, 0.01);
+        int[] yes_partition = kmeans.perform_clustering();
         
         System.out.println("All done");
 

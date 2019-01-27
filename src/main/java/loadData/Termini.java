@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.lucene.analysis.util.CharArrayMap.EntrySet;
+
 import com.opencsv.CSVWriter;
 
 import net.seninp.jmotif.sax.SAXException;
@@ -42,7 +44,9 @@ public class Termini {
 	
 	public Termine getTerm(String key) {return this.terms.get(key);}
 	
-	public  Set<String> getImportantTerms() {return this.reduced_terms.keySet();} //!!
+	public  Set<String> getImportantTermsKeySet() {return this.reduced_terms.keySet();} //!!
+	
+	public  Map<String, Termine> getImportantTerms() {return this.reduced_terms;}
 	
 	//public void kMeans();
 	//public void getCoGraph();
@@ -66,7 +70,7 @@ public class Termini {
 	       this.terms = sortedMap;
     }
 	
-	public void  setTop(int n) {
+	public void setTop(int n) {
 		this.reduced_terms = new HashMap<>();
 		int cnt = 0; 
         
@@ -93,7 +97,7 @@ public class Termini {
 		}
 	}
 	
-	public void getSAXStringIntoFile(String filePath) {
+	public void getSAXStringsIntoFile(String filePath) {
 		File file = new File(filePath); 
 	    try { 
 	        // create FileWriter object with file as parameter 
@@ -104,7 +108,7 @@ public class Termini {
 	  
 	        // add data to csv 
 	        for (Entry<String, Termine> termine : this.reduced_terms.entrySet()) {
-				writer.writeNext( new String[] {termine.getValue().getSAXString()}); 
+				writer.writeNext( new String[] {termine.getValue().getSAXString().toString()}); 
 			} 	  
 	        // closing writer connection 
 	        writer.close(); 
@@ -115,7 +119,18 @@ public class Termini {
 	    } 
 	}
 
-	/*public void setSaxMostImp() {
-		this.saxMostImp = new char[this.reduced_terms.size()][20]
-	}*/
+	public void setSaxMostImp() {
+		int n = this.reduced_terms.size();
+		// qui ci andrebbe un try except perhè non è detto che l'iterator che invochi abbia un next()
+		int m = this.reduced_terms.entrySet().iterator().next().getValue().getTimeSeries().length; 
+		this.saxMostImp = new char[n][m];
+		// assumendo che le time series abbiano tutte la stessa lunghezza:
+		int count = 0;
+		while(this.reduced_terms.entrySet().iterator().hasNext()) {
+			this.saxMostImp[count] = this.reduced_terms.entrySet().iterator().next().getValue().getSAXString();
+			count++;
+		}
+	}
+
+	public char[][] getSaxMostImp(){return(this.saxMostImp);}
 }

@@ -16,7 +16,7 @@ public class Termine {
 	private Long freq = 0L;
 	private ArrayList<Long> timeStamps = new ArrayList<>();
 	private double[] timeSeries;
-	private String saxString;
+	private char[] saxString;
 	
 	/*
 	 * Methods
@@ -67,6 +67,8 @@ public class Termine {
 
  	public double[] getTimeSeries() {return this.timeSeries;}
  	
+ 	public int getTimeSeriesLength() {return this.timeSeries.length;}
+ 	
  	public void setSAXString(int alphabetSize, double nThreshold) throws SAXException { // 2, 0.01
 		
 		/*
@@ -85,10 +87,10 @@ public class Termine {
         // perform the discretization with sp.ts2saxByChunking(timeseries , paaSize, cuts, nThreshold)
         SAXRecords res = sp.ts2saxByChunking(this.timeSeries, this.timeSeries.length, na.getCuts(alphabetSize), nThreshold);
         // get sax string
-        this.saxString = res.getSAXString("");
+        this.saxString = res.getSAXString("").toCharArray();
     }
 
- 	public String getSAXString() {return this.saxString;}
+ 	public char[] getSAXString() {return this.saxString;}
  	
- 	public int getSaxLength() {return this.saxString.length();}
+ 	public int getSaxLength() {return this.saxString.length;}
 }

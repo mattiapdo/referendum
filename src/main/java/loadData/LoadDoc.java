@@ -43,7 +43,7 @@ import twitter4j.TwitterException;
  *
  * @author marti
  */
-public class loadDoc {
+public class LoadDoc {
 	
     public static void main(String [ ] args) throws FileNotFoundException, IOException {
     	System.out.println("Starting");
@@ -87,10 +87,10 @@ public class loadDoc {
                 sw.load(line);
                 // add doc to index 
             } catch (TwitterException ex) {
-                Logger.getLogger(loadDoc.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(LoadDoc.class.getName()).log(Level.SEVERE, null, ex);
             }
 
-        index_creator.addDoc(writer, sw.getStatus().getUser().getScreenName().toLowerCase(), sw.getStatus().getUser().getId(), sw.getStatus().getText().toLowerCase(), sw.getTime());     
+        IndexCreator.addDoc(writer, sw.getStatus().getUser().getScreenName().toLowerCase(), sw.getStatus().getUser().getId(), sw.getStatus().getText().toLowerCase(), sw.getTime());     
         line = br.readLine();
         }
         br.close();

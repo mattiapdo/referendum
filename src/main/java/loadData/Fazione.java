@@ -11,11 +11,9 @@ public class Fazione {
 	 * Attributi
 	 */
 	private String idea;
-	//private ArrayList<String> users = null;
 	private HashSet<String> users;
 	private HashSet<String> bosses;
 	private HashSet<Integer> docs;
-	//private Termini most_important_terms;
 	private Termini terms = new Termini();
 	
 	/*

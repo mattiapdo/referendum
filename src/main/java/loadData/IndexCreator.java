@@ -25,7 +25,7 @@ import static org.apache.lucene.util.Version.LUCENE_41;
  *
  * @author marti
  */
-public class index_creator {
+public class IndexCreator {
     
  
     
