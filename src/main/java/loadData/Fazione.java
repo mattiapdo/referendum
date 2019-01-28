@@ -10,11 +10,13 @@ public class Fazione {
 	/*
 	 * Attributi
 	 */
+	@SuppressWarnings("unused")
 	private String idea;
 	private HashSet<String> users;
 	private HashSet<String> bosses;
 	private HashSet<Integer> docs;
 	private Termini terms = new Termini();
+	//private Clusters clusters;
 	
 	/*
 	 * Metodi
@@ -56,5 +58,7 @@ public class Fazione {
 	public void addUser(String newUser) { this.users.add(newUser); }
 
 	public void addDoc(Integer newDoc) { this.docs.add(newDoc); }
+	
+	public HashSet<Integer> getDocs() {return this.docs;}
 	
 }

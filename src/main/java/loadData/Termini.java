@@ -13,8 +13,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.lucene.analysis.util.CharArrayMap.EntrySet;
-
 import com.opencsv.CSVWriter;
 
 import net.seninp.jmotif.sax.SAXException;
@@ -27,8 +25,7 @@ public class Termini {
 	private Map<String, Termine> terms;
 	private Map<String, Termine> reduced_terms;
 	private char[][] saxMostImp;
-	//private ??? groups;
-	//private ??? coGraph;
+	private String[] paroleMostImp;
 	
 	/*
 	 * Methods
@@ -133,4 +130,19 @@ public class Termini {
 	}
 
 	public char[][] getSaxMostImp(){return(this.saxMostImp);}
+	
+	public void setParolaMostImp() {
+		int n = this.reduced_terms.size();
+		// qui ci andrebbe un try except perhè non è detto che l'iterator che invochi abbia un next()
+		 
+		this.paroleMostImp = new String[n];
+		// assumendo che le time series abbiano tutte la stessa lunghezza:
+		int count = 0;
+		while(this.reduced_terms.entrySet().iterator().hasNext()) {
+			this.paroleMostImp[count] = this.reduced_terms.entrySet().iterator().next().getValue().getParola();
+			count++;
+		}
+	}
+	
+	public String[] getParolaMostImp() {return(this.paroleMostImp);}
 }

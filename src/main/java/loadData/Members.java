@@ -185,7 +185,8 @@ public class Members {
 		Iterator<Entry<String, double[]>> it = timeseries.entrySet().iterator();
 		// per ogni parola
 	    while (it.hasNext()) {
-	        Map.Entry pair = (Map.Entry)it.next();		
+	        @SuppressWarnings("rawtypes")
+			Map.Entry pair = (Map.Entry)it.next();		
 	        String term = (String) pair.getKey() ;					// questa è la parola
 	        double[] timeserie =  (double[])pair.getValue();		// questa è la sua time series
 	        String SAX = TimeSeriesToSAX(timeserie, 2, 0.01);
