@@ -5,11 +5,16 @@
  */
 package loadData;
 
+import it.stilo.g.algo.ConnectedComponents;
+import it.stilo.g.algo.CoreDecomposition;
+import it.stilo.g.structures.Core;
 import it.stilo.g.structures.WeightedUndirectedGraph;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.DirectoryReader;
@@ -30,7 +35,9 @@ public class Co_Occurence_Graph {
     
     private final String[] words;
     private final HashSet<Integer> indices;
-    WeightedUndirectedGraph g;
+    static WeightedUndirectedGraph g;														// chiedi perchè static..
+    private static final int worker = (int) (Runtime.getRuntime().availableProcessors());  // chiedi perchè static e final
+    
     
     
     public Co_Occurence_Graph(String[] words,  HashSet<Integer> indices) throws ParseException, IOException {
@@ -122,6 +129,49 @@ public class Co_Occurence_Graph {
 	    }
 	}
     
-    public WeightedUndirectedGraph getGraph() {return this.g;}
+    public WeightedUndirectedGraph getGraph() {return Co_Occurence_Graph.g;}			// prima di settare g come atributo static era {return this.g;}
     
+ // this method is not set to static because it uses the array of words 
+    public Set<Set<Integer>> connected_components() throws InterruptedException {
+    /* Find all the connected components in the input graph 
+     * Input : graph g
+     * Output : Nested set in which each inner set stores the node in a connected component 
+     *
+     */
+        
+       // initialize array of roots (taking all the nodes) 
+       int[] all = new int[words.length];
+       for (int i = 0; i < words.length; i++) {
+           all[i] = i;
+       }
+       
+       // extract connected components 
+       Set<Set<Integer>> comps = ConnectedComponents.rootedConnectedComponents(g, all, worker);
+       
+       //returns all the connected component as a nested set 
+       return comps;
+   }
+    
+ // this method is set to static becuase it does not take as input the array words (it is the same for each generated object) 
+    public static int[] innermost_cores() throws InterruptedException {
+    /* Find the innermost core of the input graph 
+     * Input : graph g
+     * Output : array showing the nodes belonging to the innermost core 
+     */
+   
+       // extract innermost cores
+       Core c = CoreDecomposition.getInnerMostCore(g, worker);
+       
+       //number of nodes in the innermost cores 
+       int n_nodes = c.seq.length; 
+       
+       // initialize array to store nodes in the core 
+       int[] core_nodes = new int[n_nodes]; 
+       
+       // fill the array @core_nodes
+       System.arraycopy(c.seq, 0, core_nodes, 0, n_nodes);
+       
+       //returns all the nodes in the innermost core 
+       return core_nodes;
+   }
 }
