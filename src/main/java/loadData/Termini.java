@@ -118,12 +118,14 @@ public class Termini {
 
 	public void setSaxMostImp() {
 		int n = this.reduced_terms.size();
-		// qui ci andrebbe un try except perhè non è detto che l'iterator che invochi abbia un next()
-		int m = this.reduced_terms.entrySet().iterator().next().getValue().getTimeSeries().length; 
+		// qui ci andrebbe un try except perhè non è detto che l'iterator che invochi abbia un next() ma do per scontato che ci sia almeno un 
+		// elemento tra i reduced terms
+		int m = this.reduced_terms.entrySet().iterator().next().getValue().getSaxLength(); // ... .getTimeSeries().length
 		this.saxMostImp = new char[n][m];
 		// assumendo che le time series abbiano tutte la stessa lunghezza:
 		int count = 0;
-		while(this.reduced_terms.entrySet().iterator().hasNext()) {
+		//while(this.reduced_terms.entrySet().iterator().hasNext()) {
+		while(count<n) {
 			this.saxMostImp[count] = this.reduced_terms.entrySet().iterator().next().getValue().getSAXString();
 			count++;
 		}

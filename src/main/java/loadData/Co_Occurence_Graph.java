@@ -33,12 +33,14 @@ import static org.apache.lucene.util.Version.LUCENE_41;
 
 public class Co_Occurence_Graph {
     
-    private final String[] words;
-    private final HashSet<Integer> indices;
-    static WeightedUndirectedGraph g;														// chiedi perchè static..
-    private static final int worker = (int) (Runtime.getRuntime().availableProcessors());  // chiedi perchè static e final
-    
-    
+	// ogni vertice rappresenta una delle parole presenti in questo array
+    private String[] words;
+    // indices è un set di documenti da controllare per connettere i vertici
+    private HashSet<Integer> indices;
+    // actual co-occurrence graph
+    private WeightedUndirectedGraph g;														
+    private static final int worker = (int) (Runtime.getRuntime().availableProcessors());  // chiedi perchè static e final... edit: questo effettivamente è un 
+    																						//parametro sempre uguale a se stesso.. in ogni istanza
     
     public Co_Occurence_Graph(String[] words,  HashSet<Integer> indices) throws ParseException, IOException {
         /*
@@ -129,7 +131,7 @@ public class Co_Occurence_Graph {
 	    }
 	}
     
-    public WeightedUndirectedGraph getGraph() {return Co_Occurence_Graph.g;}			// prima di settare g come atributo static era {return this.g;}
+    public WeightedUndirectedGraph getGraph() {return this.g;}			// prima di settare g come atributo static era {return this.g;}
     
  // this method is not set to static because it uses the array of words 
     public Set<Set<Integer>> connected_components() throws InterruptedException {
@@ -153,7 +155,8 @@ public class Co_Occurence_Graph {
    }
     
  // this method is set to static becuase it does not take as input the array words (it is the same for each generated object) 
-    public static int[] innermost_cores() throws InterruptedException {
+    // ma gli innermost cores dipendono dal particolare grafo che 
+    public int[] innermost_cores() throws InterruptedException {
     /* Find the innermost core of the input graph 
      * Input : graph g
      * Output : array showing the nodes belonging to the innermost core 

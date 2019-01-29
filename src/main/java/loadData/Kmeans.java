@@ -64,6 +64,8 @@ public class Kmeans
         //length of each sax string 
         this.m = sax[0].length; 
         
+        this.setLookUpTable();
+        
     }
     
     
@@ -87,8 +89,8 @@ public class Kmeans
 
         Double[] breakpoints_arr = breakpoints.get(alphabet_size); 
 
-        for(int i = 1; i<=alphabet_size; i++) {
-            for(int j = 1; j <= alphabet_size; j ++ ) {
+        for(int i = 1; i<alphabet_size; i++) { 					// i<= alphabet_size
+            for(int j = 1; j < alphabet_size; j ++ ) { 			// j<= alphabet_size
                 if(Math.abs(i-j)<=1) {
                    lookup_table[i][j] = 0;
                 } else {
@@ -112,14 +114,9 @@ public class Kmeans
         
         // for each cluster 
         for(int c = 0; c< k; c++) {
-            
-            // for each character position 
-            for(int i = 0; i<m; i++) {
-         
-                // randomly sample a character 
-                centroids[c][i] = sax_alphabet[ random.nextInt(sax_alphabet.length) ];
-            
-        }
+        
+            // randomly sample a character 
+            centroids[c] = sax[ random.nextInt(n) ];
             
         }
         
@@ -192,50 +189,55 @@ public class Kmeans
 	}
     
 
-    public char[][] update_centroid(int[] partition) {
+    public void update_centroid(int[] partition) {
      /*
         * update cluster centroids by computing medoids 
         * partition : array giving the cluster memebership for each array
         * 
         * Return updated cluster centroids 
     */ 
+    	
+   char median;
+	
+   // for each cluster 
+   for(int c = 0; c<k; c++) {
 
-       // for each cluster 
-       for(int c = 0; c<k; c++) {
+      //for each character position  
+      for(int i = 0; i<m; i ++) {
 
-          //for each character position  
-          for(int i = 0; i<m; i ++) {
+          //initialize array 
+          ArrayList<Character> array_pos = new ArrayList<Character>();
 
-              //initialize array 
-              ArrayList<Character> array_pos = new ArrayList<Character>();
+          //for each sax string in the dataset 
+          for(int j = 0; j< n ; j++ ) {
 
-              //for each sax string in the dataset 
-              for(int j = 0; j< n ; j++ ) {
-
-                  // create array with all characters n position @i for sax strings belonging to cluster @c 
-                  if(partition[j] == c) {
-                   array_pos.add(sax[j][i]);    
-                  }
-        
+              // create array with all characters n position @i for sax strings belonging to cluster @c 
+              if(partition[j] == c) {
+               array_pos.add(sax[j][i]);    
               }
-              // sort the array 
-               Collections.sort(array_pos); 
-               char median;
-               // get median 
-               median = (char) array_pos.get((int) Math.floor(array_pos.size()/2));
-               
-               // update centroid of cluster @c in position @i 
-               centroids[c][i] = median; 
-
+    
           }
-        
-
+          // sort the array 
+           Collections.sort(array_pos); // sort ArrayList<Character> ?
+           
+           // get median 
+           try {
+        	   median = (char) array_pos.get((int) Math.floor(array_pos.size()/2));		// {a,a,a,b,c,d,d,d,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e} -> e
+        	   // update centroid of cluster @c in position @i 
+               centroids[c][i] = median; 
+           }
+           catch (Exception e) {
+        	   //System.out.println(array_pos + "\n Non ho potuto calcolare mediana");
+           }
+           
+           
+           
+          }
        }
-       return centroids;
    }
     
     
-    public boolean check_convergence(char[][] old_centroids, char[][] centroids ) {
+    public boolean check_convergence(char[][] old_centroids) {
        /*
        * check convergence : if all the cluster centroids are displaced by less than @convergence_threshold the method returns true 
        * old_centroids : previous centroids 
@@ -281,7 +283,9 @@ public class Kmeans
         
         // for each iteration 
         for(int iter = 0; iter< MaxIter; iter++) {
-
+        	
+        	System.out.println(partition.toString());
+        	
             // update clusters assigning each point to the cluster having the closest centroid 
             partition = update_partition(partition); 
 
@@ -289,10 +293,10 @@ public class Kmeans
             old_centroids = centroids; 
            
             // update cluster centroids 
-            centroids =  update_centroid(partition); 
+            update_centroid(partition); 
 
             //check convergence 
-            boolean converged = check_convergence(old_centroids,  centroids);
+            boolean converged = check_convergence(old_centroids);
             if(converged) {
                 break; 
             }

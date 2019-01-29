@@ -50,4 +50,6 @@ public class Clusters {
 	public Cluster getCluster(int id) {
 		return (this.mapIndexToCluster.get(id));
 	}
+
+	public int getNumOfClusters() {return this.numOfClusters;}
 }

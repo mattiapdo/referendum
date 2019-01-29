@@ -49,6 +49,8 @@ public class Fazione {
 	    }
 	}
 	
+	public String getIdea() { return this.idea;}
+	
 	public HashSet<String> getUsers() {	return this.users;}
 	
 	public HashSet<String> getBosses() {	return this.bosses;}
