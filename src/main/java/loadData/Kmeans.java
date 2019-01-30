@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 public class Kmeans 
         
@@ -25,11 +25,11 @@ public class Kmeans
     private int alphabet_size;
     
     private char[][] sax;
-	private int m;
-	private int n;
-	private char[] sax_alphabet;
+    private int m;
+    private int n;
+    private char[] sax_alphabet;
 	
-	private double[][] lookup_table;
+    private double[][] lookup_table;
 	
     
     // constructor
@@ -89,16 +89,19 @@ public class Kmeans
 
         Double[] breakpoints_arr = breakpoints.get(alphabet_size); 
 
-        for(int i = 1; i<alphabet_size; i++) { 					// i<= alphabet_size
-            for(int j = 1; j < alphabet_size; j ++ ) { 			// j<= alphabet_size
+        for(int i = 1; i<alphabet_size + 1 ; i++) { 					// i<= alphabet_size
+            for(int j = 1; j < alphabet_size + 1 ; j ++ ) { 			// j<= alphabet_size
                 if(Math.abs(i-j)<=1) {
-                   lookup_table[i][j] = 0;
+                   lookup_table[i-1][j-1] = 0;
                 } else {
-                   lookup_table[i][j] = breakpoints_arr[(Math.max(i,j) - 2)] - breakpoints_arr[(Math.min(i, j) - 1)];
+                   lookup_table[i-1][j-1] = breakpoints_arr[(Math.max(i,j) - 2)] - breakpoints_arr[(Math.min(i, j) - 1)];
                 }
             }
         }
     }
+    
+    
+    public double[][] getLookupTable(){return this.lookup_table;}
     
     
     public char[][] initialize_centroids() {
@@ -107,21 +110,27 @@ public class Kmeans
         *
         * return a bidimensional array of random centroids 
         */ 
-        Random random = new Random();
-        
-         //initilize centroids array (each row represent the centroid of a cluster) 
-        this.centroids = new char[k][m]; 
-        
-        // for each cluster 
-        for(int c = 0; c< k; c++) {
-        
-            // randomly sample a character 
-            centroids[c] = sax[ random.nextInt(n) ];
-            
-        }
-        
-   
-        return centroids;
+
+    // create array list object       
+      List<Integer> list = new ArrayList<Integer>();
+      
+      // fill with integers from 0 to n-1 
+      for(int i = 0; i < n; i++) { list.add(i); }
+      
+      // shuffle 
+      Collections.shuffle(list); 
+      
+      // initialize centroids 
+      char[][] centroids = new char[k][m]; 
+
+   // for each cluster 
+      for(int c = 0; c < k; c++) {
+       // randomly sample without replacement a sax  
+        centroids[c] = sax[(int) list.get(c)];
+
+    }
+       
+      return centroids;
     }
     
     
@@ -248,11 +257,12 @@ public class Kmeans
 
        boolean converged = true; 
        
+       double d; 
        // for each cluster 
        for(int c = 0; c < k ; c++) {
            
            //compute distance
-           double d; 
+           
            d = dist(old_centroids[c], centroids[c]);
          
            // check convergence for current cluster centroid
@@ -284,7 +294,7 @@ public class Kmeans
         // for each iteration 
         for(int iter = 0; iter< MaxIter; iter++) {
         	
-        	System.out.println(partition.toString());
+        	System.out.println(Arrays.toString(partition));
         	
             // update clusters assigning each point to the cluster having the closest centroid 
             partition = update_partition(partition); 
@@ -297,7 +307,9 @@ public class Kmeans
 
             //check convergence 
             boolean converged = check_convergence(old_centroids);
+            
             if(converged) {
+            	System.out.println("\t.. kmeans convergend after " + (iter+1) + " iterations");
                 break; 
             }
 

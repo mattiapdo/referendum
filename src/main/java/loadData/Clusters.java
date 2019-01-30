@@ -16,7 +16,11 @@ public class Clusters {
 	Clusters(int[] partition, String[] allWords) {
 		this.partition = partition;
 		this.setAllWords(allWords);
-		this.numOfClusters = Stream.of(partition).distinct().toArray().length;
+		this.numOfClusters = setNumOfClusters();//Stream.of(partition).distinct().toArray().length;
+		this.mapIndexToWord = new HashMap<>();
+		this.mapIndexToCluster = new HashMap<>();
+		
+		System.out.println("in constructor: num of clusters = " + this.numOfClusters);
 		
 		// fill mapIndexToWord
 		for (int i=0; i<this.partition.length; i++) {
@@ -28,7 +32,12 @@ public class Clusters {
 			this.mapIndexToCluster.put(i, new Cluster(i));
 		}
 		
-		// fill the cluster objects that are inside mapIndexToCluster
+		// create the clusters
+		for (int i=0; i<this.numOfClusters; i++) {
+			mapIndexToCluster.put(i, new Cluster(i));
+		}
+		
+		// fill the clusters
 		for (int i=0; i<this.partition.length; i++) {
 			int currentIndex = this.partition[i];
 			String currentWord = this.allWords[i];
@@ -43,13 +52,39 @@ public class Clusters {
 		return allWords;
 	}
 
+	
 	public void setAllWords(String[] allWords) {
 		this.allWords = allWords;
 	}
 
+	
 	public Cluster getCluster(int id) {
 		return (this.mapIndexToCluster.get(id));
 	}
 
+	
 	public int getNumOfClusters() {return this.numOfClusters;}
+	
+	
+	int setNumOfClusters() { 
+		int n = partition.length;
+		// Pick all elements one by one 
+		int c = 0;
+        for (int i = 0; i < n; i++) 
+        { 
+            // Check if the picked element  
+            // is already printed 
+            int j; 
+            for (j = 0; j < i; j++) 
+            if (partition[i] == partition[j]) 
+                break; 
+      
+            // If not printed earlier,  
+            // then print it 
+            if (i == j) 
+            c++;
+            //System.out.print( partition[i] + " "); 
+        } 
+        return c;
+    } 
 }
