@@ -84,7 +84,7 @@ public class TweetsAnalysis {
 		
 		long startTime = System.currentTimeMillis();
 		
-		/*
+		
         Fazione Y = new Fazione("Y", ".//data//users.csv");
 		
 		// open a directory
@@ -111,39 +111,40 @@ public class TweetsAnalysis {
         
         Y.getTermini().setSaxMostImp(); // edited
         char[][] saxStrings = Y.getTermini().getSaxMostImp();
-        */
-		String [] allWords = {"ciao", "mamma", "guarda", "come", "diverto"};//Y.getTermini().getParolaMostImp();
+        String [] allWords = Y.getTermini().getParolaMostImp();
+        	System.out.println("Most important words: " +Arrays.toString(allWords));
+        int original_size = Y.getTermini().getImportantTerms().entrySet().iterator().next().getValue().getTimeSeriesLength(); // non troppo pulito qui perchè si assume che l'iteratore abbia un next()
+        
+        /*
+		String [] allWords = {"ciao", "mamma", "guarda", "come", "diverto"};
 		System.out.println("Most important words: " +Arrays.toString(allWords));
 		char[][] saxStrings = new char[][]  {{ 'a', 'b', 'c', 'a', 'd', 'e', 'a', 'c', 'c', 'd' },
 			 {  'b', 'b', 'a', 'a', 'd', 'e', 'a', 'c', 'c', 'd'},
 			 {  'c', 'b', 'c', 'a', 'd', 'e', 'a', 'c', 'c', 'd' },
 			 {'d', 'b', 'b', 'a', 'd', 'e', 'a', 'c', 'c', 'd'},
 			 {'e', 'b', 'e', 'a', 'd', 'e', 'a', 'c', 'c', 'd'}} ;
+		int original_size = 10;
+		*/
+		
         // K-means
         int k = 4;
-        	//System.out.println("\nRunning "+ k +"- means clustering on top 1000 words from " + Y.getIdea() + " bosses");
-        int original_size = 10;//Y.getTermini().getImportantTerms().entrySet().iterator().next().getValue().getTimeSeriesLength(); // non troppo pulito qui perchè si assume che l'iteratore abbia un next()
-        
+        	System.out.println("\nRunning "+ k +"- means clustering on top 1000 words from " + Y.getIdea() + " bosses");
         Kmeans kmeans = new Kmeans(saxStrings, k, 5, original_size, 1000, 0.); // remove redundant int alphabetsize
-        
-        int[] yes_partition = kmeans.perform_clustering();
-        
+
+        int[] yes_partition = kmeans.perform_clustering();        
         System.out.println("partizione finale: " + Arrays.toString(yes_partition));
-        
-        
-        
         
         Clusters clusters = new Clusters(yes_partition, allWords);
         	System.out.println("found " + clusters.getNumOfClusters() + " clusters");
         
-        // to be repeated for all the clusters!   -> use clusters.getNumOfClusters()
+        // for each cluster...
         for(int i=0; i<clusters.getNumOfClusters(); i++) {
 	        Cluster cluster = clusters.getCluster(i);
 	        ArrayList<String> clusterWords = cluster.getWords();
 	        String[] words = clusterWords.toArray(new String[0]);
 	        	System.out.println("\t Cluster number "+ i + " contains:" + Arrays.toString(words));
 	        
-	        //	System.out.println("Creating co-occurrence graph on cluster " + 0 + "...");
+	        //	System.out.println("Creating co-occurrence graph on cluster " + i + "...");
 	        //Co_Occurence_Graph CoOcc = new Co_Occurence_Graph(words, Y.getDocs());
 	        //WeightedUndirectedGraph g = CoOcc.getGraph();
         }

@@ -36,7 +36,7 @@ public class LoadDoc {
     public static void main(String [ ] args) throws FileNotFoundException, IOException {
     	System.out.println("Starting");
         Directory dir; 
-        dir = new SimpleFSDirectory(new File(".\\data\\lucene_index"));
+        dir = new SimpleFSDirectory(new File(".\\data\\lucene_index_r"));
         Analyzer analyzer = new StandardAnalyzer(LUCENE_41);
         System.out.println("Setting writer configurations");
         IndexWriterConfig cfg= new IndexWriterConfig(LUCENE_41,analyzer);
@@ -44,7 +44,7 @@ public class LoadDoc {
         IndexWriter writer = new IndexWriter(dir, cfg); 
         System.out.println("Created index");
         
-        File file = new File(".\\data\\test-dataset-sbn2017\\stream");
+        File file = new File(".\\data\\test-dataset-sbn2017_r\\stream");
         String[] directories = file.list(new FilenameFilter() {
         public boolean accept(File current, String name) {
            return new File(current, name).isDirectory();
@@ -55,9 +55,9 @@ public class LoadDoc {
         
     for (String directory : directories) {
      System.out.println("Directory: " + directory);
-     Iterator<File> it = FileUtils.iterateFiles(new File(".\\data\\test-dataset-sbn2017\\stream\\" + directory), null, false);
+     Iterator<File> it = FileUtils.iterateFiles(new File(".\\data\\test-dataset-sbn2017_r\\stream\\" + directory), null, false);
      while(it.hasNext()){           
-        String file_path = ".\\data\\test-dataset-sbn2017\\stream\\" + directory + "\\" + ((File) it.next()).getName(); 
+        String file_path = ".\\data\\test-dataset-sbn2017_r\\stream\\" + directory + "\\" + ((File) it.next()).getName(); 
         System.out.println("\tprocessing file "+ file_path);
         FileInputStream fs = new FileInputStream(file_path); 
         InputStream gzStream = new GZIPInputStream(fs); ///  FileInputStream fs = new FileInputStream(file_path);

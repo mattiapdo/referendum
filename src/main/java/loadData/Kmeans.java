@@ -19,14 +19,17 @@ public class Kmeans
     private int MaxIter;
     private double convergence_threshold;
     private int k;
-    private char[][] centroids;
+    private boolean converged;
     
     private int original_size;
     private int alphabet_size;
     
     private char[][] sax;
-    private int m;
     private int n;
+    private int m;
+    private char[][] centroids;
+    
+    private int[] partition;
     private char[] sax_alphabet;
 	
     private double[][] lookup_table;
@@ -48,6 +51,9 @@ public class Kmeans
         // number of clusters 
         this.k = k; 
         
+        // converged
+        this.converged = false;
+        
         //length of the original time series 
         this.original_size = original_size; 
         
@@ -63,6 +69,12 @@ public class Kmeans
         
         //length of each sax string 
         this.m = sax[0].length; 
+        
+        // centroids
+        centroids = new char[this.k][this.m];
+        
+        // partition
+        this.partition = new int[this.n];
         
         this.setLookUpTable();
         
@@ -104,33 +116,31 @@ public class Kmeans
     public double[][] getLookupTable(){return this.lookup_table;}
     
     
-    public char[][] initialize_centroids() {
+    public void initialize_centroids() {
         /*
         * randomly initilize centroids (i.e. medoids) 
         *
         * return a bidimensional array of random centroids 
         */ 
 
-    // create array list object       
-      List<Integer> list = new ArrayList<Integer>();
+    	// create array list object       
+    	List<Integer> list = new ArrayList<Integer>();
       
-      // fill with integers from 0 to n-1 
-      for(int i = 0; i < n; i++) { list.add(i); }
+    	// fill with integers from 0 to n-1 
+    	for(int i = 0; i < n; i++) { list.add(i); }
       
-      // shuffle 
-      Collections.shuffle(list); 
+    	// shuffle 
+    	Collections.shuffle(list); 
       
-      // initialize centroids 
-      char[][] centroids = new char[k][m]; 
+    	// initialize centroids 
+    	//char[][] centroids = new char[k][m];  they are initializated in the constructor
 
-   // for each cluster 
-      for(int c = 0; c < k; c++) {
-       // randomly sample without replacement a sax  
+    	// for each cluster 
+    	for(int c = 0; c < k; c++) {
+      	// randomly sample without replacement a sax  
         centroids[c] = sax[(int) list.get(c)];
-
-    }
-       
-      return centroids;
+    	}
+    	
     }
     
     
@@ -166,7 +176,7 @@ public class Kmeans
 	 }
     
     
-    public int[] update_partition(int[] partition) {
+    public void update_partition() {
 	    /*
 	        * update clustering by assigning each sax to cluster with closest centtoid  
 	        * partition : array giving the cluster memebership for each array 
@@ -194,11 +204,10 @@ public class Kmeans
 	            }
 	        }
 	    }
-	  return partition;   
 	}
     
 
-    public void update_centroid(int[] partition) {
+    public void update_centroid() {
      /*
         * update cluster centroids by computing medoids 
         * partition : array giving the cluster memebership for each array
@@ -238,9 +247,6 @@ public class Kmeans
            catch (Exception e) {
         	   //System.out.println(array_pos + "\n Non ho potuto calcolare mediana");
            }
-           
-           
-           
           }
        }
    }
@@ -255,19 +261,19 @@ public class Kmeans
        * Return true if algorithm converged, false otherwise 
         */ 
 
-       boolean converged = true; 
-       
        double d; 
+       
        // for each cluster 
        for(int c = 0; c < k ; c++) {
            
            //compute distance
            
            d = dist(old_centroids[c], centroids[c]);
+           //System.out.println("distance from centroid "+ c+ "= " + d);
          
            // check convergence for current cluster centroid
-           if(d > convergence_threshold) {
-               converged = false;
+           if(d < convergence_threshold) {
+               converged = true;
            }
 
        }
@@ -283,27 +289,30 @@ public class Kmeans
          */
        
         // array storing cluster membership 
-        int[] partition = new int[n]; 
+        //int[] partition = new int[n];  --> partition is initialized in the constructor
+    	
         
         // centroids before update 
         char[][] old_centroids; 
         
         // randomly initialize centroids 
-        centroids = initialize_centroids(); 
+        initialize_centroids(); 
+        
+        update_partition(); 
         
         // for each iteration 
         for(int iter = 0; iter< MaxIter; iter++) {
         	
-        	System.out.println(Arrays.toString(partition));
+        	System.out.println("Iteration #" + iter + "current partition: " + Arrays.toString(partition));
         	
             // update clusters assigning each point to the cluster having the closest centroid 
-            partition = update_partition(partition); 
+            update_partition(); 
 
             // centroids before updating for checking convergence 
             old_centroids = centroids; 
            
             // update cluster centroids 
-            update_centroid(partition); 
+            update_centroid(); 
 
             //check convergence 
             boolean converged = check_convergence(old_centroids);
