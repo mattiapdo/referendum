@@ -156,12 +156,13 @@ public class Termini {
 		int m = this.reduced_terms.entrySet().iterator().next().getValue().getSaxLength(); 
 		this.saxMostImp = new char[n][m];    // assumendo che le time series abbiano tutte la stessa lunghezza
 		int count = 0;
-		
-		//while(this.reduced_terms.entrySet().iterator().hasNext() ) {
-		while(count<n) {
-			this.saxMostImp[count] = this.reduced_terms.entrySet().iterator().next().getValue().getSAXString();
-			count++;
-		}
+
+		Iterator<Entry<String, Termine>> itr= reduced_terms.entrySet().iterator();
+        while (itr.hasNext()) {
+        	Entry<String, Termine> entry = itr.next();
+        	saxMostImp[count] = entry.getValue().getSAXString();
+            count ++;
+        }
 	}
 	
 	public void setParolaMostImp() {

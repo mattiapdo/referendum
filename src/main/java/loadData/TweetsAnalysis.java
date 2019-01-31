@@ -238,13 +238,17 @@ public class TweetsAnalysis {
         	    
         	}
         
-       
         //Y.getTermini().getSAXStringsIntoFile("./data/SAXStrings.csv"); //se non serve non chiamarlo.. impiega parecchio tempo
         
         // prepare input for k-means
         int k = 4;
         Y.getTermini().setSaxMostImp();
         char[][] saxStrings = Y.getTermini().getSaxMostImp();
+        
+        System.out.println("Sax strings");
+        for(int i=0; i<saxStrings.length; i++) {
+        	System.out.println(Arrays.toString(saxStrings[i]));
+        }
         Y.getTermini().setParolaMostImp();
         String [] allWords = Y.getTermini().getParolaMostImp();
         System.out.println("Most important words: " +Arrays.toString(allWords));
@@ -266,9 +270,9 @@ public class TweetsAnalysis {
 	        Cluster cluster = clusters.getCluster(i);
 	        ArrayList<String> clusterWords = cluster.getWords();
 	        String[] words = clusterWords.toArray(new String[0]);
-	        	System.out.println("\t Cluster number "+ i + " contains:" + Arrays.toString(words));
+	        System.out.println("\t Cluster number "+ i + " contains:" + Arrays.toString(words));
 	        
-	        System.out.println("Creating co-occurrence graph on cluster " + i + "...");
+	        System.out.println("\tCreating co-occurrence graph on cluster " + i + "...");
 	        Co_Occurence_Graph CoOcc = new Co_Occurence_Graph(words, Y.getDocs());
 	        WeightedUndirectedGraph g = CoOcc.getGraph();
 	        ;
