@@ -72,7 +72,7 @@ public class Co_Occurence_Graph {
     	g = new WeightedUndirectedGraph(words.length);
         //g = new WeightedUndirectedGraph(most_important_terms.size());
           
-        Directory dir = new SimpleFSDirectory(new File(".\\data\\lucene_index_r"));
+        Directory dir = new SimpleFSDirectory(new File(".\\data\\lucene_index_r_r"));
         Analyzer analyzer = new StandardAnalyzer(LUCENE_41);
         
         // creat a map that stores, for each word (in the cluster), a set of all the documents that contain that word

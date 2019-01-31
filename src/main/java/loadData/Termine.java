@@ -21,7 +21,7 @@ public class Termine {
 	/*
 	 * Methods
 	 */
-	// Constructor
+
 	Termine(String parola){
 		this.parola = parola;
 	}
@@ -47,10 +47,16 @@ public class Termine {
 		 *  output:
 		 *  timeSeries: HashMap che fa corrispondere a ogni termine un array di double, ovvero la time series
 		 */ 
-		
-		grain = 43200; // 12 ore
-		long max = 1481035996842L; //  Saturday 31 December 2016 12:00:00
-		long min = 1480170785012L; //  Sunday 1 May 2016 12:00:00
+ 		
+//		//to be used with full dataset
+//		grain = 43200000; // 12 ore
+//		long max = 1481035996842L; //  Saturday 31 December 2016 12:00:00
+// 		long min = 1480170785012L; //  Sunday 1 May 2016 12:00:00
+ 		
+ 		//to be used with reduced dataset
+ 		grain = 4320000; 
+ 		long max = 1480257098290L;  
+		long min = 1480170785012L; 
 		int i = (int) ((max-min)/grain);
 		
 		// inizializza la timeserie con tutti zeri
@@ -69,12 +75,12 @@ public class Termine {
  	
  	public int getTimeSeriesLength() {return this.timeSeries.length;}
  	
- 	public void setSAXString(int alphabetSize, double nThreshold) throws SAXException { // 2, 0.01
+ 	public void setSAXString(int alphabetSize, double nThreshold) throws SAXException { 
 		
 		/*
 		 * input:
-		 *  - alphabetSize (use 2)
-		 *  - nThreshold (use 0.01)
+		 *  - alphabetSize 
+		 *  - nThreshold 
 		 *  
 		 *  output: 
 		 *  - sax : SAX string

@@ -42,30 +42,23 @@ public class Clusters {
 			int currentIndex = this.partition[i];
 			String currentWord = this.allWords[i];
 			mapIndexToCluster.get(currentIndex).addWord(currentWord);
-		}
-		
-		
-		
+		}	
 	}
 
 	public String[] getAllWords() {
 		return allWords;
 	}
 
-	
 	public void setAllWords(String[] allWords) {
 		this.allWords = allWords;
 	}
-
 	
 	public Cluster getCluster(int id) {
 		return (this.mapIndexToCluster.get(id));
 	}
-
 	
 	public int getNumOfClusters() {return this.numOfClusters;}
-	
-	
+		
 	int setNumOfClusters() { 
 		int n = partition.length;
 		// Pick all elements one by one 
