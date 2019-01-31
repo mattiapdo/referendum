@@ -157,7 +157,8 @@ public class Termini {
 		this.saxMostImp = new char[n][m];    // assumendo che le time series abbiano tutte la stessa lunghezza
 		int count = 0;
 		
-		while(this.reduced_terms.entrySet().iterator().hasNext()) {
+		//while(this.reduced_terms.entrySet().iterator().hasNext() ) {
+		while(count<n) {
 			this.saxMostImp[count] = this.reduced_terms.entrySet().iterator().next().getValue().getSAXString();
 			count++;
 		}
@@ -172,10 +173,12 @@ public class Termini {
 		this.paroleMostImp = new String[n];
 		int count = 0;
 		
-		while(this.reduced_terms.entrySet().iterator().hasNext()) {
-			this.paroleMostImp[count] = this.reduced_terms.entrySet().iterator().next().getValue().getParola();
-			count++;
-		}
+        Iterator<Entry<String, Termine>> itr= reduced_terms.entrySet().iterator();
+        while (itr.hasNext()) {
+        	Entry<String, Termine> entry = itr.next();
+            paroleMostImp[count] = entry.getValue().getParola();
+            count ++;
+        }
 	}
 
 	public char[][] getSaxMostImp(){return(this.saxMostImp);}

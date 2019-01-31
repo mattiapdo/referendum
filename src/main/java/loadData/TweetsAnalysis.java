@@ -9,15 +9,26 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map.Entry;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Version;
 
 import com.opencsv.CSVReader;
 
@@ -48,7 +59,6 @@ public class TweetsAnalysis {
 		
 	}
 
-	
 	public static void printMatrixofDouble(double[][] m){
 	    try{
 	        int rows = m.length;
@@ -67,7 +77,6 @@ public class TweetsAnalysis {
 	    }catch(Exception e){System.out.println("Matrix is empty!!");}
 	}
 	
-	
 	public static void printMatrixofStrings(String[][] m){
 	    try{
 	        int rows = m.length;
@@ -85,7 +94,6 @@ public class TweetsAnalysis {
 
 	    }catch(Exception e){System.out.println("Matrix is empty!!");}
 	}
-	
 	
 	public static void scanDocuments(IndexReader ir, Fazione Y) throws NumberFormatException, IOException {
 		 
@@ -127,21 +135,80 @@ public class TweetsAnalysis {
 	             }           
 	        }
 		}
-
 	
+	public static void queryForDocuments(IndexReader ir, Fazione Y) throws NumberFormatException, IOException, ParseException {
+		
+	   long startTime = System.currentTimeMillis();
+		 
+       System.out.println("Number of documents: " + ir.numDocs());
+	   Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_41);
+		   
+	   
+	   IndexSearcher searcher = new IndexSearcher(ir);
+	   QueryParser parser = new QueryParser(Version.LUCENE_41, "UserSN", analyzer);
+	   BooleanQuery bq = new BooleanQuery();
+	   
+	   for(String query : Y.getBosses()) {
+		   
+		   Query q = parser.parse(query);
+		   BooleanClause boolClause = new BooleanClause(q, Occur.SHOULD);
+		   bq.add(boolClause);
+		  
+	   }
+	   
+	   TopDocs docs = searcher.search(bq, ir.numDocs());
+	   ScoreDoc[] hits = docs.scoreDocs;
+	   
+	   Document doc = null;
+	   int docID;
+	   
+	   for(ScoreDoc sc:hits) {
+		   	
+		   	docID = sc.doc;
+		   	doc = searcher.doc(docID);
+		   	Y.addDoc(docID);	// aggiungi il doc a quelli dei boss
+        	Y.addUser(doc.get("userid"));
+        	
+			//System.out.println("Doc examined has ID " + docID + " with time " + searcher.doc(docID).get("time") +" from " + doc.get("UserSN") + " ..\n ******   Terms  *******");
+			Terms terms = ir.getTermVector(docID, "text");  
+		    TermsEnum iterator = terms.iterator(null); 
+		    BytesRef term; String termText; 
+		    
+		    
+        	
+			while((term = iterator.next())!=null) {
+				termText = term.utf8ToString();
+				//System.out.print(termText); System.out.print(" ");
+				
+				if(! Y.getTermini().getTerms().containsKey(termText)) {
+                	//.. aggiungilo
+                	Y.getTermini().addTerm(termText, new Termine(termText));
+                }
+                //update frequency 
+            	Y.getTermini().getTerm(termText).incrementFreq(1L);  // frequencies è definito come un long ?!
+                
+                //update timestamp
+            	Y.getTermini().getTerm(termText).addTimestamp(Long.valueOf(doc.get("time")));
+			}
+		}
+	   System.out.println("Elapsed time for data acquisition: " + (long) (System.currentTimeMillis() - startTime) + " msec");
+	}
+
 	public static void main(String[] args) throws IOException, SAXException, ParseException {
 		
 		long startTime = System.currentTimeMillis();
 		
         Fazione Y = new Fazione("Y", ".//data//users.csv");
-		
-		// open a directory
-		Directory dir = new SimpleFSDirectory(new File(".\\data\\lucene_index_r"));
+		// open the index directory
+		Directory dir = new SimpleFSDirectory(new File(".\\data\\lucene_index"));
 		IndexReader ir = DirectoryReader.open(dir);            
         
-		System.out.println("Scanning documents...");
+		/*System.out.println("Scanning documents..."); // this is the old function
         scanDocuments(ir, Y);
-        System.out.println("Elapsed time for scanning docs: " + (long) (System.currentTimeMillis() - startTime) + " msec");
+        */
+        
+		System.out.println("Querying for documents in index...");
+        queryForDocuments(ir,Y);
         
         System.out.println("Number of bosses found in dataset " + Y.getUsers().size());
         System.out.println("Sorting terms by frequency");
@@ -150,9 +217,6 @@ public class TweetsAnalysis {
         System.out.println("Setting hashmap with top "+numOfTopWords+" results");
         System.out.println("Top terms by frequency:\n" + Y.getTermini().getImportantTermsKeySet());
         	
-        	
-        	
-        
         System.out.println("Setting top terms time series");
         Y.getTermini().setTopTermsTimeSeries(43200000L);
         System.out.println("Setting top terms SAX strings");
@@ -181,6 +245,7 @@ public class TweetsAnalysis {
         int k = 4;
         Y.getTermini().setSaxMostImp();
         char[][] saxStrings = Y.getTermini().getSaxMostImp();
+        Y.getTermini().setParolaMostImp();
         String [] allWords = Y.getTermini().getParolaMostImp();
         System.out.println("Most important words: " +Arrays.toString(allWords));
         int original_size = Y.getTermini().getImportantTerms().entrySet().iterator().next().getValue().getTimeSeriesLength(); // non troppo pulito qui perchè si assume che l'iteratore abbia un next() 

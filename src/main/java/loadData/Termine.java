@@ -27,15 +27,15 @@ public class Termine {
 	}
 	public void setParola(String parola) { this.parola = parola; }
 	
-	public String getParola() {return this.parola; }
+	public String getParola() {return parola; }
 	
 	public void setFreq(Long freq) { this.freq = freq; }
 	
-	public void incrementFreq(Long increment) { this.freq = this.freq + increment; }
+	public void incrementFreq(Long increment) { freq = freq + increment; }
 	
 	public Long getFreq() { return this.freq; }
 	
-	public void addTimestamp(Long timestamp) {this.timeStamps.add(timestamp);}
+	public void addTimestamp(Long timestamp) {timeStamps.add(timestamp);}
 	
  	public void setTimeSeries (long grain) {
 		
@@ -48,17 +48,17 @@ public class Termine {
 		 *  timeSeries: HashMap che fa corrispondere a ogni termine un array di double, ovvero la time series
 		 */ 
  		
-//		//to be used with full dataset
-//		grain = 43200000; // 12 ore
-//		long max = 1481035996842L; //  Saturday 31 December 2016 12:00:00
-// 		long min = 1480170785012L; //  Sunday 1 May 2016 12:00:00
+		//to be used with full dataset
+		grain = 43200000; // 12 ore
+		long max = 1481035996842L; //  Saturday 31 December 2016 12:00:00
+ 		long min = 1480170785012L; //  Sunday 1 May 2016 12:00:00
  		
  		//to be used with reduced dataset
- 		grain = 4320000; 
- 		long max = 1480257098290L;  
-		long min = 1480170785012L; 
+// 		grain = 4320000; 
+// 		long max = 1480257098290L;  
+//		long min = 1480170785012L; 
 		int i = (int) ((max-min)/grain);
-		
+	
 		// inizializza la timeserie con tutti zeri
     	double[] timeSeries = new double[i+1];
         Arrays.fill(timeSeries, 0);
@@ -71,9 +71,9 @@ public class Termine {
 		this.timeSeries = timeSeries;
 	}
 
- 	public double[] getTimeSeries() {return this.timeSeries;}
+ 	public double[] getTimeSeries() {return timeSeries;}
  	
- 	public int getTimeSeriesLength() {return this.timeSeries.length;}
+ 	public int getTimeSeriesLength() {return timeSeries.length;}
  	
  	public void setSAXString(int alphabetSize, double nThreshold) throws SAXException { 
 		
@@ -91,12 +91,12 @@ public class Termine {
         SAXProcessor sp = new SAXProcessor();     
 
         // perform the discretization with sp.ts2saxByChunking(timeseries , paaSize, cuts, nThreshold)
-        SAXRecords res = sp.ts2saxByChunking(this.timeSeries, this.timeSeries.length, na.getCuts(alphabetSize), nThreshold);
+        SAXRecords res = sp.ts2saxByChunking(timeSeries, timeSeries.length, na.getCuts(alphabetSize), nThreshold);
         // get sax string
         this.saxString = res.getSAXString("").toCharArray();
     }
 
- 	public char[] getSAXString() {return this.saxString;}
+ 	public char[] getSAXString() {return saxString;}
  	
- 	public int getSaxLength() {return this.saxString.length;}
+ 	public int getSaxLength() {return saxString.length;}
 }
