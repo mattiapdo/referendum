@@ -194,7 +194,7 @@ public class TweetsAnalysis {
 	   System.out.println("Elapsed time for data acquisition: " + (long) (System.currentTimeMillis() - startTime) + " msec");
 	}
 
-	public static void main(String[] args) throws IOException, SAXException, ParseException {
+	public static void main(String[] args) throws IOException, SAXException, ParseException, InterruptedException {
 		
 		long startTime = System.currentTimeMillis();
 		
@@ -273,11 +273,37 @@ public class TweetsAnalysis {
 	        System.out.println("\t Cluster number "+ i + " contains:" + Arrays.toString(words));
 	        
 	        System.out.println("\tCreating co-occurrence graph on cluster " + i + "...");
-	        Co_Occurence_Graph CoOcc = new Co_Occurence_Graph(words, Y.getDocs());
+	        CoOcc CoOcc = new CoOcc(words, Y.getDocs());
 	        WeightedUndirectedGraph g = CoOcc.getGraph();
-	        ;
+	        WeightedUndirectedGraph s  = CoOcc.getSubGraph(3.0); // can directly do this when instantiting g if(n>)
+                 
+            
+            // Extract innermost cores from connected components 
+            ArrayList<String[]> components_core_nodes = CoOcc.innermost_cores_from_connected_components(s); 
+
+            int c = 0; 
+            // for each word in @components_core_nodes , retrieve time series 
+            for( String[] words_arr : components_core_nodes  ) {
+                
+                // increment connected component counter 
+                c++; 
+                
+                for( String word : words_arr) {
+                   
+                    // get time series with grain 3 hours 
+                    Y.getTermini().getTerms().get(word).setTimeSeries(10800);
+                    double[] ts = Y.getTermini().getTerms().get(word).getTimeSeries();
+                    // connected component id + cluster id + time series 
+//                    outputWriter.write( String.valueOf(i) +  " " +  String.valueOf(c) + " " + Arrays.toString(ts) );
+//                    outputWriter.newLine();
+                    System.out.println(( String.valueOf(i) +  " " +  String.valueOf(c) + " " + Arrays.toString(ts) ));
+                    
+                    
+                }
+                
+            }
+            
         }
-        
         
         System.out.println("All done");
         
