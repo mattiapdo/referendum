@@ -1,6 +1,8 @@
 package loadData;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
@@ -10,6 +12,7 @@ import java.util.Arrays;
 import java.util.Map.Entry;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.it.ItalianAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -94,55 +97,14 @@ public class TweetsAnalysis {
 
 	    }catch(Exception e){System.out.println("Matrix is empty!!");}
 	}
-	
-	public static void scanDocuments(IndexReader ir, Fazione Y) throws NumberFormatException, IOException {
-		 
-		System.out.println("Number of documents: " + ir.numDocs());
-	     // iterate all documents 
-	     for (int i=0; i<ir.maxDoc(); i++) {
-	            
-	             Terms terms = ir.getTermVector(i, "text");  
-	             TermsEnum iterator = terms.iterator(null); 
-	             BytesRef term; String termText; 
-	             @SuppressWarnings("unused")
-	             Long termFreq; 
-	             Document doc = ir.document(i);
-	             String name = doc.get("UserSN"); 
-	             
-	             // if the user corresponding to the document is of interest 
-	             if(Y.getBosses().contains(name)) {
-	            	 
-	            	Y.addDoc(i);	// aggiungi il doc a quelli dei boss
-	            	Y.addUser(doc.get("userid"));
 
-	                // iterate all the terms in the document 
-	                while((term = iterator.next())!=null) {
-
-	                    termText = term.utf8ToString();
-	                    termFreq = iterator.totalTermFreq();
-	                    
-	                    // se il token corrente non è tra quelli dei si
-	                    if(! Y.getTermini().getTerms().containsKey(termText)) {
-	                    	//.. aggiungilo
-	                    	Y.getTermini().addTerm(termText, new Termine(termText));
-	                    }
-	                    //update frequency 
-	                	Y.getTermini().getTerm(termText).incrementFreq(1L);  // frequencies è definito come un long ?!
-	                    
-	                    //update timestamp
-	                	Y.getTermini().getTerm(termText).addTimestamp(Long.valueOf(doc.get("time")));
-	                }   
-	             }           
-	        }
-		}
-	
 	public static void queryForDocuments(IndexReader ir, Fazione Y) throws NumberFormatException, IOException, ParseException {
 		
 	   long startTime = System.currentTimeMillis();
 		 
        System.out.println("Number of documents: " + ir.numDocs());
 	   Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_41);
-		   
+	   //Analyzer analyzer = new ItalianAnalyzer(LUCENE_41);
 	   
 	   IndexSearcher searcher = new IndexSearcher(ir);
 	   QueryParser parser = new QueryParser(Version.LUCENE_41, "UserSN", analyzer);
@@ -179,16 +141,19 @@ public class TweetsAnalysis {
 			while((term = iterator.next())!=null) {
 				termText = term.utf8ToString();
 				//System.out.print(termText); System.out.print(" ");
+				if(!termText.equals("https") &&  !termText.equals("rt") && !termText.equals("t.co")){
+					if(! Y.getTermini().getTerms().containsKey(termText)){
+	                	//.. aggiungilo
+	                	Y.getTermini().addTerm(termText, new Termine(termText));
+	                }
+	                //update frequency 
+	            	Y.getTermini().getTerm(termText).incrementFreq(1L);  
+	                
+	                //update timestamp
+	            	Y.getTermini().getTerm(termText).addTimestamp(Long.valueOf(doc.get("time")));
+				}
 				
-				if(! Y.getTermini().getTerms().containsKey(termText)) {
-                	//.. aggiungilo
-                	Y.getTermini().addTerm(termText, new Termine(termText));
-                }
-                //update frequency 
-            	Y.getTermini().getTerm(termText).incrementFreq(1L);  // frequencies è definito come un long ?!
-                
-                //update timestamp
-            	Y.getTermini().getTerm(termText).addTimestamp(Long.valueOf(doc.get("time")));
+				
 			}
 		}
 	   System.out.println("Elapsed time for data acquisition: " + (long) (System.currentTimeMillis() - startTime) + " msec");
@@ -200,112 +165,77 @@ public class TweetsAnalysis {
 		
         Fazione Y = new Fazione("Y", ".//data//users.csv");
 		// open the index directory
-		Directory dir = new SimpleFSDirectory(new File(".\\data\\lucene_index"));
+		Directory dir = new SimpleFSDirectory(new File(".\\data\\lucene_index_ita"));
 		IndexReader ir = DirectoryReader.open(dir);            
-        
-		/*System.out.println("Scanning documents..."); // this is the old function
-        scanDocuments(ir, Y);
-        */
         
 		System.out.println("Querying for documents in index...");
         queryForDocuments(ir,Y);
         
         System.out.println("Number of bosses found in dataset " + Y.getUsers().size());
-        System.out.println("Sorting terms by frequency");
+        
         int numOfTopWords = 50;
         Y.getTermini().sortTermsByFreqComparatorAndTakeTopN(numOfTopWords);
-        System.out.println("Setting hashmap with top "+numOfTopWords+" results");
         System.out.println("Top terms by frequency:\n" + Y.getTermini().getImportantTermsKeySet());
         	
-        System.out.println("Setting top terms time series");
-        Y.getTermini().setTopTermsTimeSeries(43200000L);
-        System.out.println("Setting top terms SAX strings");
-        Y.getTermini().setTopTermsSAXStrings(6, 0.01);
-        System.out.println("Saving SAX string into file");
-        
-        
-        System.out.println("Important Terms:");
-        for (Entry<String, Termine> current_entry : Y.getTermini().getImportantTerms().entrySet())
-        	{
-        		String key = current_entry.getKey();
-        		Termine value = current_entry.getValue();
-        		String parola = value.getParola();
-    			long fre = value.getFreq();
-    			double[] ts = value.getTimeSeries();
-    			char[] sax = value.getSAXString();
-    			System.out.println("key= " + key + "\n\tparola= " + parola + "\n\tfrequenza= " + fre + 
-    				"\n\ttimeseries= " + Arrays.toString(ts) + "\n\tsax= " + Arrays.toString(sax));
-        	    
-        	}
-        
-        //Y.getTermini().getSAXStringsIntoFile("./data/SAXStrings.csv"); //se non serve non chiamarlo.. impiega parecchio tempo
-        
+      
+        Y.getTermini().setTopTermsTimeSeries(43200000L);	//Setting top terms time series  
+        Y.getTermini().setTopTermsSAXStrings(6, 0.01);	    //Setting top terms SAX strings
+
         // prepare input for k-means
-        int k = 4;
+        int k = 2;
         Y.getTermini().setSaxMostImp();
         char[][] saxStrings = Y.getTermini().getSaxMostImp();
         
-        System.out.println("Sax strings");
-        for(int i=0; i<saxStrings.length; i++) {
-        	System.out.println(Arrays.toString(saxStrings[i]));
-        }
         Y.getTermini().setParolaMostImp();
         String [] allWords = Y.getTermini().getParolaMostImp();
         System.out.println("Most important words: " +Arrays.toString(allWords));
         int original_size = Y.getTermini().getImportantTerms().entrySet().iterator().next().getValue().getTimeSeriesLength(); // non troppo pulito qui perchè si assume che l'iteratore abbia un next() 
         
         // K-means
-        System.out.println("\nRunning "+ k +"- means clustering on top 1000 words from " + Y.getIdea() + " bosses");
+        System.out.println("\n\nRunning "+ k +"- means clustering on top 1000 words from " + Y.getIdea() + " bosses");
         Kmeans kmeans = new Kmeans(saxStrings, k, 6, original_size, 1000, 0.); // remove redundant int alphabetsize
 
         int[] yes_partition = kmeans.perform_clustering();        
-        System.out.println("partizione finale: " + Arrays.toString(yes_partition));
+        System.out.println("Final partition: " + Arrays.toString(yes_partition));
         
         Clusters clusters = new Clusters(yes_partition, allWords);
-        System.out.println("found " + clusters.getNumOfClusters() + " clusters");
+        System.out.println("found " + clusters.getNumOfClusters() + " clusters\n");
         
-        // Co-occurrence graphs
+        // initilize file in writing mode 
+        BufferedWriter writer = new BufferedWriter(new FileWriter("output//words_"+ Y.getIdea()+".txt"));
+        
         // for each cluster...
         for(int i=0; i<clusters.getNumOfClusters(); i++) {
 	        Cluster cluster = clusters.getCluster(i);
 	        ArrayList<String> clusterWords = cluster.getWords();
 	        String[] words = clusterWords.toArray(new String[0]);
-	        System.out.println("\t Cluster number "+ i + " contains:" + Arrays.toString(words));
+	        System.out.println("\nCluster number "+ i );
 	        
-	        System.out.println("\tCreating co-occurrence graph on cluster " + i + "...");
-	        CoOcc CoOcc = new CoOcc(words, Y.getDocs());
-	        WeightedUndirectedGraph g = CoOcc.getGraph();
-	        WeightedUndirectedGraph s  = CoOcc.getSubGraph(3.0); // can directly do this when instantiting g if(n>)
-                 
-            
-            // Extract innermost cores from connected components 
-            ArrayList<String[]> components_core_nodes = CoOcc.innermost_cores_from_connected_components(s); 
-
+	        int threshold = 3;
+	        System.out.println("Creating co-occurrence graph on cluster " + i + " with threshold " + threshold + " on edge weights");
+	        CoOcc CoOcc = new CoOcc(words, Y.getDocs(), Y, threshold);
+	        System.out.println("Extract innermost cores from connected components ");
+            ArrayList<String[]> components_core_nodes = CoOcc.components_core_nodes; 
+           
             int c = 0; 
             // for each word in @components_core_nodes , retrieve time series 
             for( String[] words_arr : components_core_nodes  ) {
-                
-                // increment connected component counter 
-                c++; 
-                
                 for( String word : words_arr) {
-                   
                     // get time series with grain 3 hours 
                     Y.getTermini().getTerms().get(word).setTimeSeries(10800);
                     double[] ts = Y.getTermini().getTerms().get(word).getTimeSeries();
                     // connected component id + cluster id + time series 
-//                    outputWriter.write( String.valueOf(i) +  " " +  String.valueOf(c) + " " + Arrays.toString(ts) );
-//                    outputWriter.newLine();
-                    System.out.println(( String.valueOf(i) +  " " +  String.valueOf(c) + " " + Arrays.toString(ts) ));
-                    
-                    
+                    System.out.println(("cluster id: " + String.valueOf(i) +  " connected comp id: " +  String.valueOf(c) + " timeseries:" + Arrays.toString(ts) ));
+                    writer.write(word);
+                    writer.newLine();
                 }
-                
+                // increment connected component counter 
+                c++; 
             }
-            
         }
         
-        System.out.println("All done");
+        writer.close();
+        System.out.println("\n\n***********************\nAll done");
         
         
         System.out.println("Total elapsed time: " + (long) (System.currentTimeMillis() - startTime) + " msec");

@@ -20,8 +20,6 @@ public class Clusters {
 		this.mapIndexToWord = new HashMap<>();
 		this.mapIndexToCluster = new HashMap<>();
 		
-		System.out.println("in constructor: num of clusters = " + this.numOfClusters);
-		
 		// fill mapIndexToWord
 		for (int i=0; i<this.partition.length; i++) {
 			this.mapIndexToWord.put(partition[i], allWords[i]);

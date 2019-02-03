@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.SerializationUtils;
 
 public class Kmeans 
         
@@ -52,7 +53,7 @@ public class Kmeans
         this.k = k; 
         
         // converged
-        this.converged = false;
+        // this.converged = false;
         
         //length of the original time series 
         this.original_size = original_size; 
@@ -139,12 +140,14 @@ public class Kmeans
     	for(int c = 0; c < k; c++) {
       	// randomly sample without replacement a sax  
         centroids[c] = sax[(int) list.get(c)];
+        
     	}
-    	
+        
+        
     }
     
     
-    public double dist(char[] sax, char[] centroid) {
+    public double dist(char[] sax_a, char[] sax_b) {
 	      /*
 	        * compute MinDist distance between two sax strings 
 	        * 
@@ -161,8 +164,8 @@ public class Kmeans
 	     for(int p = 0; p < m; p++) {
 	         
 	         // get table indices 
-	         int i = new String(sax_alphabet).indexOf(sax[p]);
-	         int j = new String(sax_alphabet).indexOf(centroid[p]);
+	         int i = new String(sax_alphabet).indexOf(sax_a[p]);
+	         int j = new String(sax_alphabet).indexOf(sax_b[p]);
 	         
 	         //update distance 
 	         total_sum += lookup_table[i][j]; 
@@ -235,12 +238,17 @@ public class Kmeans
               }
     
           }
+          
+          
           // sort the array 
            Collections.sort(array_pos); // sort ArrayList<Character> ?
            
+                      
            // get median 
            try {
-        	   median = (char) array_pos.get((int) Math.floor(array_pos.size()/2));		// {a,a,a,b,c,d,d,d,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e} -> e
+        	   median = (char) array_pos.get((int) Math.floor(array_pos.size()/2));		
+                   
+                   
         	   // update centroid of cluster @c in position @i 
                centroids[c][i] = median; 
            }
@@ -263,6 +271,8 @@ public class Kmeans
 
        double d; 
        
+       boolean converged = true; 
+                     
        // for each cluster 
        for(int c = 0; c < k ; c++) {
            
@@ -270,14 +280,18 @@ public class Kmeans
            
            d = dist(old_centroids[c], centroids[c]);
            //System.out.println("distance from centroid "+ c+ "= " + d);
-         
+                   
            // check convergence for current cluster centroid
-           if(d < convergence_threshold) {
-               converged = true;
+           if(d  > convergence_threshold) {
+               converged = false; 
            }
+          
 
        }
-       return converged;
+
+       
+    
+      return converged;
    }
     
         
@@ -293,34 +307,48 @@ public class Kmeans
     	
         
         // centroids before update 
-        char[][] old_centroids; 
+        char[][] old_centroids =  new char[k][m]; 
         
         // randomly initialize centroids 
         initialize_centroids(); 
         
-        update_partition(); 
+        // update_partition(); 
         
         // for each iteration 
         for(int iter = 0; iter< MaxIter; iter++) {
         	
-        	System.out.println("Iteration #" + iter + "current partition: " + Arrays.toString(partition));
         	
             // update clusters assigning each point to the cluster having the closest centroid 
             update_partition(); 
+            
+            System.out.println("\tIteration # " + iter + " : current partition: " + Arrays.toString(partition));
+
 
             // centroids before updating for checking convergence 
-            old_centroids = centroids; 
            
+            /*
+            for(int i = 0; i<k; i++) {
+                for(int j = 0; j<m; j++) {
+                    old_centroids[i][j] = centroids[i][j]; 
+                }
+            }
+            */ 
+            old_centroids = SerializationUtils.clone(centroids); 
+
+            
             // update cluster centroids 
             update_centroid(); 
+            
+          
 
             //check convergence 
-            boolean converged = check_convergence(old_centroids);
+            boolean conv = check_convergence(old_centroids);
             
-            if(converged) {
-            	System.out.println("\t.. kmeans convergend after " + (iter+1) + " iterations");
-                break; 
-            }
+            
+           if(conv) {
+              System.out.println("Kmeans converged after " + (iter+1) + " iterations");
+              break; 
+           }
 
         }
         

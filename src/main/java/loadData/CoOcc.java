@@ -11,20 +11,25 @@ import it.stilo.g.algo.SubGraph;
 import it.stilo.g.algo.SubGraphByEdgesWeight;
 import it.stilo.g.structures.Core;
 import it.stilo.g.structures.WeightedUndirectedGraph;
+
+import static org.apache.lucene.util.Version.LUCENE_41;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.commons.lang3.ArrayUtils;
+
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.it.ItalianAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -32,44 +37,27 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Version;
-import static org.apache.lucene.util.Version.LUCENE_41;
-
-import it.stilo.g.algo.SubGraphByEdgesWeight;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.BytesRef;
-import it.stilo.g.structures.WeightedUndirectedGraph;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import net.seninp.jmotif.sax.SAXException;
+
 
 
 public class CoOcc {
     
 	// ogni vertice rappresenta una delle parole presenti in questo array
     private String[] words;
-    // indices  un set di documenti da controllare per connettere i vertici
-    private HashSet<Integer> indices;
+    private HashSet<Integer> indices; // un set di documenti da controllare per connettere i vertici
+    //private HashSet<Integer> indices;
+    // fazione
+    private Fazione fazione;
     // actual co-occurrence graph
-    private WeightedUndirectedGraph g;														
+    private WeightedUndirectedGraph g;
+    ArrayList<String[]> components_core_nodes ;
+	private QueryParserBase parser;														
     private static final int worker = (int) (Runtime.getRuntime().availableProcessors());  // chiedi perchè static e final... edit: questo effettivamente é un 
     																						//parametro sempre uguale a se stesso.. in ogni istanza
     
-    public CoOcc(String[] words,  HashSet<Integer> indices) throws ParseException, IOException {
+    public CoOcc(String[] words, HashSet<Integer> indices, Fazione fazione, int threshold) throws ParseException, IOException, InterruptedException {
         /*
          * input:
          * words - and array containing the words that will constitute the vertexes of the graph
@@ -77,8 +65,10 @@ public class CoOcc {
          */
         this.words = words; 
         this.indices = indices;
-        set_graph();
-          
+        this.fazione = fazione;
+        
+        set_graph(threshold);
+        components_core_nodes = innermost_cores_from_connected_components(g);
     }
 
     CoOcc(ArrayList<String> clusterWords, HashSet<Integer> indices) {
@@ -94,57 +84,64 @@ public class CoOcc {
               
     }
     
-    public void set_graph() throws ParseException, IOException {
+    public void set_graph(int threshold) throws ParseException, IOException {
         /*
         * sets this.g : the co-occurence graph for a given cluster 
         */ 
      
         // initialize graph 
     	g = new WeightedUndirectedGraph(words.length);
-        //g = new WeightedUndirectedGraph(most_important_terms.size());
-          
-        Directory dir = new SimpleFSDirectory(new File(".\\data\\lucene_index_r"));
-        Analyzer analyzer = new StandardAnalyzer(LUCENE_41);
-        
-        // creat a map that stores, for each word (in the cluster), a set of all the documents that contain that word
-        HashMap<String,HashSet<Integer>> word_to_docs_map = new HashMap<String,HashSet<Integer>>();
-        int n_strings = words.length; 
-        
-        // for each word...
-        for (int idx = 0; idx < n_strings; idx++) {
-            // query the index with that given word and retrieve all the documents that contains that word
-            String query = words[idx]; 
-            QueryParser parser = new QueryParser(Version.LUCENE_41, "text", analyzer); 
-            Query q = parser.parse(query); 
-
-            IndexReader reader = DirectoryReader.open(dir);
-            IndexSearcher searcher = new IndexSearcher(reader);
-            TopDocs docs = searcher.search(q, reader.numDocs());
-            ScoreDoc[] hits = docs.scoreDocs;
-            
-            // update map from word to docs it appears in 
-            //HashSet<Integer> tmp = null;
-            // tmp is the set of all the document ids in which the current word is contained
-            HashSet<Integer> tmp = new HashSet<>();
-            //word_to_docs_map.put(query, tmp);
-            
-            // for each document, retrieved from the query
-            for(Integer i=0;i<hits.length;i++) {
-                Integer docId = hits[i].doc;
-                // tmp = word_to_docs_map.get(query); 
-                // if the document is a document written by an user of interest 
-                if(indices.contains(docId)) {
-                   tmp.add(docId);
-                }
-                //word_to_docs_map.put(query, tmp);   
-            }
-            word_to_docs_map.put(query, tmp);
-	    }
-	        
+    	
+    	HashMap<String, HashSet<Integer>> word_to_docs_map = new HashMap<>();
+      
+        Directory dir = new SimpleFSDirectory(new File(".\\data\\lucene_index_ita"));
+        IndexReader reader = DirectoryReader.open(dir);
+        IndexSearcher searcher = new IndexSearcher(reader);
+        //Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_41);
+        Analyzer analyzer = new ItalianAnalyzer(LUCENE_41);
+       
+ 	   	String mywords = String.join(" ", words);
+ 	   	System.out.println("words in current cluster: " + mywords );
+ 	  
+ 	   	String mybosses = String.join(" ", fazione.getBosses());
+ 	    System.out.println("searching among documents by: " + mybosses);
+ 	   
+ 	   	String queryString = "(text:" + mywords + ") AND (UserSN:" + mybosses + ")";
+ 	   	QueryParser parser = new QueryParser(Version.LUCENE_41, "UserSN", analyzer);
+ 	   	Query q = parser.parse(queryString); 
+ 	   	
+ 	   	// find all documents written by the bosses that contains at least one of the words in the cluster
+ 	   	TopDocs docs = searcher.search(q, reader.numDocs());
+ 	   	ScoreDoc[] hits = docs.scoreDocs;
+ 	   	
+ 	   	System.out.println("Found " + hits.length + " documents written by politicians that contain words in current cluster");
+ 	   	
+ 	   	// per ogni parola
+ 	   	for (int idx = 0; idx < words.length; idx++) {
+ 	   	  //System.out.println("parola: "+ words[idx]);
+ 		  HashSet<Integer> tmp = new HashSet<>();			// tmp è il set di documenti in cui compare la parola
+ 		  // for each document, retrieved from the query
+          for(Integer i=0;i<hits.length;i++) {
+        	  //System.out.println("hit num " + i);
+              Integer docId = hits[i].doc;
+              TermsEnum iterator = reader.getTermVector(docId, "text").iterator(null);
+              BytesRef term;
+              HashSet<String> wordsInDoc = new HashSet<>();		// trova le parole nel documento
+              while((term = iterator.next())!=null) {
+            	  wordsInDoc.add(term.utf8ToString());
+            	  //System.out.println("add term " + term.utf8ToString());
+              }
+              if(wordsInDoc.contains(words[idx])){ // se la parola è contenuta nel documento aggiungi il documento a tmp
+            	  tmp.add(docId);
+  			  }
+          }
+          word_to_docs_map.put(words[idx], tmp); // aggiorna la mappa
+ 	   }
+ 	   	 
 	    // add edges: iterate over possible term pairs ...
-	    for(int idx_1 = 0; idx_1 < n_strings - 1; idx_1++) {
+	    for(int idx_1 = 0; idx_1 < words.length - 1; idx_1++) {
 	        
-	        for(int idx_2 = idx_1 + 1 ; idx_2 < n_strings ; idx_2 ++ ) {
+	        for(int idx_2 = idx_1 + 1 ; idx_2 <  words.length ; idx_2 ++ ) {
 	            
 	            // extract document sets associated with the considered terms 
 	            HashSet<Integer> set_a = word_to_docs_map.get(words[idx_1]); 
@@ -154,12 +151,14 @@ public class CoOcc {
 	            int n = intersectionSize(set_a, set_b);
 	            
 	            // if the terms appear in at least one common document
-	            if(n>0) {
+	            if(n>threshold) {
 	               // add edge 
 	               g.testAndAdd(idx_1, idx_2 , n); 
 	            }
 	        } 
 	    }
+	    
+	    
 	}
     
     public WeightedUndirectedGraph getGraph() {return this.g;}			// prima di settare g come atributo static era {return this.g;}
@@ -186,7 +185,7 @@ public class CoOcc {
        }
        
        // extract connected components 
-       Set<Set<Integer>> comps = ConnectedComponents.rootedConnectedComponents(g, all, worker);
+       Set<Set<Integer>> comps = ConnectedComponents.rootedConnectedComponents(s, all, worker);
        
        //returns all the connected component as a nested set 
        return comps;
@@ -194,7 +193,7 @@ public class CoOcc {
     
     // this method is set to static becuase it does not take as input the array words (it is the same for each generated object) 
     // ma gli innermost cores dipendono dal particolare grafo che 
-    public int[] innermost_cores(WeightedUndirectedGraph s ) throws InterruptedException {
+    public int[] innermost_cores(WeightedUndirectedGraph g ) throws InterruptedException {
     /* Find the innermost core of the input graph 
      * Input : graph g
      * Output : array showing the nodes belonging to the innermost core 
